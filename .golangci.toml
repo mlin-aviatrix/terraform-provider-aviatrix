@@ -2,6 +2,10 @@
   deadline = "10m"
   tests = true
 
+ [ linters-settings.custom.terraform-schema-ordering ]
+    path = "/Users/matthewlin/go/src/github.com/Terraform-Schema-Ordering/terraform-schema-ordering.so"
+    description = "asd"
+
 [linters]
   disable-all = true
   enable = [
@@ -15,4 +19,5 @@
     "unconvert",
     "unused",
     "varcheck",
+    "terraform-schema-ordering",
   ]
