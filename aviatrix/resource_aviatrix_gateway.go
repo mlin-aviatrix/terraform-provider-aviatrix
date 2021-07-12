@@ -1028,6 +1028,39 @@ func resourceAviatrixGatewayCreate(d *schema.ResourceData, meta interface{}) err
 		}
 	}
 
+	if (tagListOk || tagsOk) && goaviatrix.IsCloudType(gateway.CloudType, goaviatrix.AzureArmRelatedCloudTypes) {
+		// AVX-11170: Tags in Azure are not being added correctly for 6.4-patch
+		tags := &goaviatrix.Tags{
+			ResourceType: "gw",
+			ResourceName: d.Get("gw_name").(string),
+			CloudType:    gateway.CloudType,
+		}
+
+		if tagListOk {
+			tagList := d.Get("tag_list").([]interface{})
+			tagListStr := goaviatrix.ExpandStringList(tagList)
+			tagListStr = goaviatrix.TagListStrColon(tagListStr)
+			gateway.TagList = strings.Join(tagListStr, ",")
+			tags.TagList = gateway.TagList
+		} else {
+			tagsMap, err := extractTags(d, gateway.CloudType)
+			if err != nil {
+				return fmt.Errorf("error creating tags for gateway: %v", err)
+			}
+
+			tagJson, err := TagsMapToJson(tagsMap)
+			if err != nil {
+				return fmt.Errorf("failed to add tags when creating gateway: %v", err)
+			}
+			tags.TagJson = tagJson
+		}
+
+		err := client.UpdateTags(tags)
+		if err != nil {
+			return fmt.Errorf("failed to add tags when creating gateway: %s", err)
+		}
+	}
+
 	enableVpcDnsServer := d.Get("enable_vpc_dns_server").(bool)
 	if goaviatrix.IsCloudType(gateway.CloudType, goaviatrix.AWSRelatedCloudTypes|goaviatrix.AzureArmRelatedCloudTypes|goaviatrix.AliCloudRelatedCloudTypes) && enableVpcDnsServer {
 		gwVpcDnsServer := &goaviatrix.Gateway{
